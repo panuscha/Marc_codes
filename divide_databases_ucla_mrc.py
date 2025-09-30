@@ -1,8 +1,13 @@
+""" Tento kod rozdeli souborný marc do jednotlivych souboru podle databazi."""
+
 from pymarc import map_xml, MARCWriter, MARCReader
 
+# Cesta k soubornemu marc souboru
 file_path = 'data/ucla.mrc'
+# Cesta k souboru s Retrobi - musí se nejprve stáhnout 
 file_path_ret = 'data/ucla test/retrobi.mrc'
 
+# Cesty k vystupnim souborum
 out_alkaro = 'data/ucla test/ucla_alkaro.mrc'
 out_ret = 'data/ucla test/ucla_ret.mrc'
 out_smz = 'data/ucla test/ucla_smz.mrc'
@@ -14,6 +19,7 @@ out_all = 'data/ucla test/ucla_all.mrc'
 out_trl = 'data/ucla test/ucla_trl.mrc'
 out_mbk = 'data/ucla test/ucla_mbk.mrc' # Bohemisticke konsorcium
 
+# Definice databazi
 database_alkaro = 'ALKARO'
 database_ret = 'RET'
 database_smz = 'SMZ'
@@ -26,6 +32,7 @@ database_mbk = 'MBK'
 database_soucasna = ['B12', 'B45', 'B70', 'B80', 'B97', 'INT', 'SMZ', 'CLE1', 'CLE2', 'MBK'] # CLE1 and CLE2 was added later
 database_all = ['B12', 'B45', 'B70', 'B80', 'B97', 'ALKARO','RET','INT', 'SMZ', 'CLE1', 'CLE2', 'MBK'] # CLE1 and CLE2 was added later
 
+# Vytvoreni writeru pro jednotlive databaze
 writer_alkaro =  MARCWriter(open(out_alkaro, 'wb'))
 writer_ret =  MARCWriter(open(out_ret, 'wb'))
 writer_smz =  MARCWriter(open(out_smz, 'wb'))
@@ -39,35 +46,46 @@ writer_all = MARCWriter(open(out_all, 'wb'))
 alkaro_count = 0
 mbk_count = 0
 
+# Funkce pro rozdeleni podle databazi
+# Jelikoz je xml, tak je treba pouzit map_xml
 def save_databases(r):
 
+
+    # Soucasna a all - zaznamy musi byt zapsany jen jednou, aby nevznikaly duplikaty
     not_found_soucasna = True
     not_found_all = True
     not_found_mbk = True
     # r.remove_fields('LDR')
     # for field in  r.get_fields('FMT'):
     #     r.remove_fields('FMT')
+
+    # Vezme pole 964a a podle nej rozhodne do ktereho souboru zaznam patri
     for field in r.get_fields('964'):
         subfields = field.get_subfields('a')
         if subfields:
+            
+            # Alkaro 
             if field['a'] in database_alkaro:
                 try:
-                    writer_alkaro.write(r)    
+                    writer_alkaro.write(r)   # Zapis do souboru 
                 except Exception as error:
                     print("Exception: " + type(error).__name__)          
                     
+            # Retrobi        
             if field['a'] in database_ret:
                 try:
-                    writer_ret.write(r)   
-                except Exception as error:
-                    print("Exception: " + type(error).__name__) 
-                        
-            if field['a'] in database_smz:
-                try:
-                    writer_smz.write(r)   
+                    writer_ret.write(r)   # Zapis do souboru
                 except Exception as error:
                     print("Exception: " + type(error).__name__) 
 
+            # Samizdat            
+            if field['a'] in database_smz:
+                try:
+                    writer_smz.write(r)   # Zapis do souboru
+                except Exception as error:
+                    print("Exception: " + type(error).__name__) 
+
+            # MBK - Bohemisticke konsorcium
             if  database_mbk in field['a']:
                 try:
                     writer_mbk.write(r)  
@@ -75,14 +93,15 @@ def save_databases(r):
                     mbk_count += 1 
                 except Exception as error:
                     print("Exception: " + type(error).__name__)         
-                    
+
+            # Internet        
             if field['a'] in database_int:
                 try:
                     writer_int.write(r)   
                 except Exception as error:
                     print("Exception: " + type(error).__name__)   
                 
-
+            # CLE I 
             if field['a'] in database_cle_I:
                 try:
                     writer_cle_I.write(r)
@@ -90,18 +109,20 @@ def save_databases(r):
                 except Exception as error:
                     print("Exception: " + type(error).__name__)    
 
+            # CLE II
             if field['a'] in database_cle_II:
                 try:
                     writer_cle_II.write(r) 
                 except Exception as error:
                     print("Exception: " + type(error).__name__) 
 
+            # CLE - nutno rozdelit podle 001 na I a II
             if field['a'] in database_cle:
                         try:
-                            
                             for cle in r.get_fields('001'): 
                                 #match = re.search(pattern, str(cle.value()))
                                 match = str(cle.value())
+                                # Kdyz 1 nebo 001 v 001, tak do CLE I
                                 if match[0] == '1' or (len(match)> 2 and  match[0:3] == '001'):   
                                         writer_cle_I.write(r)  
                                         if not_found_soucasna:
@@ -110,6 +131,8 @@ def save_databases(r):
                                         if not_found_all:
                                             writer_all.write(r)  
                                             not_found_all = False 
+
+                                # Kdyz 2 nebo 002 v 001, tak do CLE II            
                                 if match[0] == '2' or (len(match)> 2 and  match[0:3] == '002'):   
                                         writer_cle_II.write(r)
                                         if not_found_soucasna:
@@ -120,8 +143,9 @@ def save_databases(r):
                                             not_found_all = False 
                         except Exception as error:
                             print(r)
-                            print("Exception: " + type(error).__name__)    
+                            print("Exception: " + type(error).__name__)   
 
+            # Soucasna a all - zaznamy musi byt zapsany jen jednou, aby nevznikaly duplikaty
             if field['a'] in database_soucasna and not_found_soucasna:
                 try:
                     writer_soucasna.write(r)  
@@ -129,6 +153,7 @@ def save_databases(r):
                 except Exception as error:
                     print("Exception: " + type(error).__name__) 
 
+            # All - zaznamy musi byt zapsany jen jednou, aby nevznikaly duplikaty
             if field['a'] in database_all and not_found_all:
                 try:
                     writer_all.write(r)  
@@ -140,8 +165,6 @@ def save_databases(r):
                     
         
 try:  
-    #map_xml(save_databases, file_path)
-
     with open(file_path, 'rb') as data:
         # Nacteni marcu
         reader = MARCReader(data)
@@ -157,6 +180,7 @@ try:
     print(f'ALKARO in SIF: {alkaro_count}')
 
     print('Adding Retrobi.')
+    # Pridej retrobi, neni soucasti ucla
     with open(file_path_ret, 'rb') as data:
         # Nacteni marcu
         reader = MARCReader(data)
@@ -171,6 +195,7 @@ try:
     print("Count: " + str(counter))
 
     print('Adding TRL.')
+    # Pridej preklady, nejsou soucasti ucla
     with open(out_trl, 'rb') as data:
         # Nacteni marcu
         reader = MARCReader(data)

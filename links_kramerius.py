@@ -30,39 +30,7 @@ def get_periodika(record, periodika):
         except: print('Nestandardní záznam')    
     return periodika    
 
-def main():
-    periodika = {'title': [], 'issn': []}
-    d = 'all'
-    database = f'data/ucla test/ucla_{d}.mrc'
-    with open(database, 'rb') as data:
-        # Nacteni marcu
-        reader = MARCReader(data)
-        for record in reader: 
-            periodika = get_periodika(record, periodika)
-    df_periodika = pd.DataFrame(periodika)
-    #df_periodika.to_excel(f'data/periodika_{d}.xlsx')
-    freq = {'title': [df_periodika[df_periodika.issn == x].title.iloc[0]
-        if not df_periodika[df_periodika.issn == x].empty else None
-        for x in df_periodika[~df_periodika.issn.isna()].issn.unique()], 
 
-        'issn': list(df_periodika[~df_periodika.issn.isna()].issn.unique()), 
-
-        'frekvence': [len(df_periodika[df_periodika['issn'] == x]) 
-                      for x in df_periodika[~df_periodika.issn.isna()].issn.unique()]}
-
-    freq2 = {'title': list(df_periodika[df_periodika.issn.isna()].title.unique()), 
-             
-            'issn': [ None
-        for _ in df_periodika[df_periodika.issn.isna()].title.unique()], 
-
-        'frekvence': [len(df_periodika[(df_periodika.issn.isna()) & (df_periodika['title'] == x)]) 
-                      for x in df_periodika[df_periodika.issn.isna()].title.unique()]}
-    
-    freq['title'].extend(freq2['title'])
-    freq['issn'].extend(freq2['issn'])
-    freq['frekvence'].extend(freq2['frekvence'])
-    df_freq = pd.DataFrame.from_dict(freq)
-    df_freq.to_excel(f'data/freq_{d}.xlsx')
 
 def do_it(record):
     uuid_text = '/uuid:'
@@ -105,6 +73,40 @@ def do_it_3(record):
             print(f'Title: {title}, ISSN: {issn}')
         except: 
             print('No 001')    
+
+def main():
+    periodika = {'title': [], 'issn': []}
+    d = 'all'
+    database = f'data/ucla test/ucla_{d}.mrc'
+    with open(database, 'rb') as data:
+        # Nacteni marcu
+        reader = MARCReader(data)
+        for record in reader: 
+            periodika = get_periodika(record, periodika)
+    df_periodika = pd.DataFrame(periodika)
+    #df_periodika.to_excel(f'data/periodika_{d}.xlsx')
+    freq = {'title': [df_periodika[df_periodika.issn == x].title.iloc[0]
+        if not df_periodika[df_periodika.issn == x].empty else None
+        for x in df_periodika[~df_periodika.issn.isna()].issn.unique()], 
+
+        'issn': list(df_periodika[~df_periodika.issn.isna()].issn.unique()), 
+
+        'frekvence': [len(df_periodika[df_periodika['issn'] == x]) 
+                      for x in df_periodika[~df_periodika.issn.isna()].issn.unique()]}
+
+    freq2 = {'title': list(df_periodika[df_periodika.issn.isna()].title.unique()), 
+             
+            'issn': [ None
+        for _ in df_periodika[df_periodika.issn.isna()].title.unique()], 
+
+        'frekvence': [len(df_periodika[(df_periodika.issn.isna()) & (df_periodika['title'] == x)]) 
+                      for x in df_periodika[df_periodika.issn.isna()].title.unique()]}
+    
+    freq['title'].extend(freq2['title'])
+    freq['issn'].extend(freq2['issn'])
+    freq['frekvence'].extend(freq2['frekvence'])
+    df_freq = pd.DataFrame.from_dict(freq)
+    df_freq.to_excel(f'data/freq_{d}.xlsx')            
                    
 
 def main_2():
